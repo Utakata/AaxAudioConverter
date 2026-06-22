@@ -28,6 +28,17 @@ namespace audiamus.aaxconv {
 
     private ComboBoxEnumAdapter<EAaxCopyMode> _cbAdapterAaxCopyMode;
 
+    // Transcription tab (built programmatically, see initTranscriptionTab)
+    private CheckBox _ckBoxBookFolderForChapterSplit;
+    private CheckBox _ckBoxTranscription;
+    private ComboBox _comBoxTranscrLanguage;
+    private ComboBox _comBoxTranscrMarkdown;
+    private NumericUpDown _nudTranscrIntro;
+    private NumericUpDown _nudTranscrOutro;
+    private CheckBox _ckBoxTranscrBoilerplate;
+    private Button _btnWhisperLoc;
+    private Label _lblWhisperLoc;
+
     public bool SettingsReset { get; private set; }
     public bool Dirty { get; private set; }
     public bool ListViewDirty { get; private set; }
@@ -59,6 +70,7 @@ namespace audiamus.aaxconv {
       initPartNaming ();
       initFlatFoldersNaming ();
       initReducedBitrate ();
+      initTranscriptionTab ();
       initControlsFromSettings ();
     }
 
@@ -136,6 +148,7 @@ namespace audiamus.aaxconv {
       initControlsFromSettingsConversion ();
       initControlsFromSettingsChapters ();
       intoControlsFromSettingsMetaTags ();
+      initControlsFromSettingsTranscription ();
     }
 
     private void initControlsFromSettingsGeneral () {
@@ -367,6 +380,7 @@ namespace audiamus.aaxconv {
       updateSettingsFromControlsConversion ();
       updateSettingsFromControlsChapters ();
       updateSettingsFromControlsMetaTags ();
+      updateSettingsFromControlsTranscription ();
     }
 
     private void updateSettingsFromControlsGeneral () {
@@ -549,6 +563,183 @@ namespace audiamus.aaxconv {
         e.Graphics.DrawString (tp.Text, e.Font, textBrush, e.Bounds.X + 1, e.Bounds.Y + 3);
       }
     }
+
+    #region Transcription tab
+
+    // The transcription tab is created in code rather than in the designer to keep the
+    // resource-heavy designer/resx files untouched.
+    private void initTranscriptionTab () {
+      var tabPage = new TabPage {
+        Name = "tabPageTranscription",
+        Text = "Transcription",
+        UseVisualStyleBackColor = true,
+        Padding = new Padding (3)
+      };
+
+      int x = 12;
+      int xIndent = 28;
+      int y = 12;
+
+      _ckBoxBookFolderForChapterSplit = new CheckBox {
+        AutoSize = true,
+        Location = new Point (x, y),
+        Text = "Keep chapter-split tracks in one book folder (no chapter sub-folders)"
+      };
+      y += 32;
+
+      _ckBoxTranscription = new CheckBox {
+        AutoSize = true,
+        Location = new Point (x, y),
+        Text = "Transcribe audio to text (local Whisper)"
+      };
+      _ckBoxTranscription.CheckedChanged += ckBoxTranscription_CheckedChanged;
+      y += 30;
+
+      var lblLanguage = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent, y + 3),
+        Text = "Language"
+      };
+      _comBoxTranscrLanguage = new ComboBox {
+        DropDownStyle = ComboBoxStyle.DropDownList,
+        Location = new Point (xIndent + 110, y),
+        Width = 160
+      };
+      _comBoxTranscrLanguage.Items.AddRange (new object[] { "English", "日本語 (Japanese)" });
+      y += 30;
+
+      var lblMarkdown = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent, y + 3),
+        Text = "Markdown"
+      };
+      _comBoxTranscrMarkdown = new ComboBox {
+        DropDownStyle = ComboBoxStyle.DropDownList,
+        Location = new Point (xIndent + 110, y),
+        Width = 220
+      };
+      // order must match ETranscriptionMarkdown: perChapter (0), perBook (1)
+      _comBoxTranscrMarkdown.Items.AddRange (new object[] {
+        "One file per chapter",
+        "One file per book"
+      });
+      y += 30;
+
+      var lblIntro = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent, y + 3),
+        Text = "Skip intro (sec)"
+      };
+      _nudTranscrIntro = new NumericUpDown {
+        Location = new Point (xIndent + 110, y),
+        Width = 60,
+        Minimum = 0,
+        Maximum = 600
+      };
+      y += 30;
+
+      var lblOutro = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent, y + 3),
+        Text = "Skip outro (sec)"
+      };
+      _nudTranscrOutro = new NumericUpDown {
+        Location = new Point (xIndent + 110, y),
+        Width = 60,
+        Minimum = 0,
+        Maximum = 600
+      };
+      y += 30;
+
+      _ckBoxTranscrBoilerplate = new CheckBox {
+        AutoSize = true,
+        Location = new Point (xIndent, y),
+        Text = "Skip Audible boilerplate (\"This is Audible …\" etc.)"
+      };
+      y += 34;
+
+      _btnWhisperLoc = new Button {
+        AutoSize = true,
+        Location = new Point (xIndent, y),
+        Text = "Whisper folder …"
+      };
+      _btnWhisperLoc.Click += btnWhisperLoc_Click;
+      _lblWhisperLoc = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent + 140, y + 5),
+        MaximumSize = new Size (300, 0)
+      };
+
+      tabPage.Controls.AddRange (new Control[] {
+        _ckBoxBookFolderForChapterSplit,
+        _ckBoxTranscription,
+        lblLanguage, _comBoxTranscrLanguage,
+        lblMarkdown, _comBoxTranscrMarkdown,
+        lblIntro, _nudTranscrIntro,
+        lblOutro, _nudTranscrOutro,
+        _ckBoxTranscrBoilerplate,
+        _btnWhisperLoc, _lblWhisperLoc
+      });
+
+      tabControl1.TabPages.Add (tabPage);
+    }
+
+    private void initControlsFromSettingsTranscription () {
+      _ckBoxBookFolderForChapterSplit.Checked = Settings.BookFolderForChapterSplit;
+      _ckBoxTranscription.Checked = Settings.Transcription == ETranscription.enabled;
+      _comBoxTranscrLanguage.SelectedIndex = (int)Settings.TranscriptionLanguage;
+      _comBoxTranscrMarkdown.SelectedIndex = (int)Settings.TranscriptionMarkdown;
+      _nudTranscrIntro.Value = Math.Min (Settings.TranscriptionSkipIntroSec, (uint)_nudTranscrIntro.Maximum);
+      _nudTranscrOutro.Value = Math.Min (Settings.TranscriptionSkipOutroSec, (uint)_nudTranscrOutro.Maximum);
+      _ckBoxTranscrBoilerplate.Checked = Settings.TranscriptionFilterBoilerplate;
+      _lblWhisperLoc.Text = Settings.WhisperDirectory;
+      enableTranscriptionDependencies (_ckBoxTranscription.Checked);
+    }
+
+    private void updateSettingsFromControlsTranscription () {
+      Settings.BookFolderForChapterSplit =
+        updateSettings (Settings.BookFolderForChapterSplit, _ckBoxBookFolderForChapterSplit.Checked);
+      Settings.Transcription =
+        updateSettings (Settings.Transcription, _ckBoxTranscription.Checked ? ETranscription.enabled : ETranscription.no);
+      Settings.TranscriptionLanguage =
+        updateSettings (Settings.TranscriptionLanguage, (ETranscriptionLanguage)Math.Max (0, _comBoxTranscrLanguage.SelectedIndex));
+      Settings.TranscriptionMarkdown =
+        updateSettings (Settings.TranscriptionMarkdown, (ETranscriptionMarkdown)Math.Max (0, _comBoxTranscrMarkdown.SelectedIndex));
+      Settings.TranscriptionSkipIntroSec =
+        updateSettings (Settings.TranscriptionSkipIntroSec, (uint)_nudTranscrIntro.Value);
+      Settings.TranscriptionSkipOutroSec =
+        updateSettings (Settings.TranscriptionSkipOutroSec, (uint)_nudTranscrOutro.Value);
+      Settings.TranscriptionFilterBoilerplate =
+        updateSettings (Settings.TranscriptionFilterBoilerplate, _ckBoxTranscrBoilerplate.Checked);
+    }
+
+    private void ckBoxTranscription_CheckedChanged (object sender, EventArgs e) {
+      enableTranscriptionDependencies (_ckBoxTranscription.Checked);
+    }
+
+    private void enableTranscriptionDependencies (bool enabled) {
+      _comBoxTranscrLanguage.Enabled = enabled;
+      _comBoxTranscrMarkdown.Enabled = enabled;
+      _nudTranscrIntro.Enabled = enabled;
+      _nudTranscrOutro.Enabled = enabled;
+      _ckBoxTranscrBoilerplate.Enabled = enabled;
+      _btnWhisperLoc.Enabled = enabled;
+    }
+
+    private void btnWhisperLoc_Click (object sender, EventArgs e) {
+      using (var fbd = new FolderBrowserDialog {
+        Description = "Select the folder containing whisper-cli.exe and the ggml model",
+        SelectedPath = Settings.WhisperDirectory ?? string.Empty
+      }) {
+        if (fbd.ShowDialog (this) != DialogResult.OK)
+          return;
+        Settings.WhisperDirectory = fbd.SelectedPath;
+        _lblWhisperLoc.Text = fbd.SelectedPath;
+        Dirty = true;
+      }
+    }
+
+    #endregion
 
   }
 }

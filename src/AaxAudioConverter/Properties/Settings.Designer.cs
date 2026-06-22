@@ -385,7 +385,103 @@ namespace audiamus.aaxconv.Properties {
                 this["FlatFolderNaming"] = value;
             }
         }
-        
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool BookFolderForChapterSplit {
+            get {
+                return ((bool)(this["BookFolderForChapterSplit"]));
+            }
+            set {
+                this["BookFolderForChapterSplit"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("no")]
+        public global::audiamus.aaxconv.lib.ETranscription Transcription {
+            get {
+                return ((global::audiamus.aaxconv.lib.ETranscription)(this["Transcription"]));
+            }
+            set {
+                this["Transcription"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("english")]
+        public global::audiamus.aaxconv.lib.ETranscriptionLanguage TranscriptionLanguage {
+            get {
+                return ((global::audiamus.aaxconv.lib.ETranscriptionLanguage)(this["TranscriptionLanguage"]));
+            }
+            set {
+                this["TranscriptionLanguage"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("perBook")]
+        public global::audiamus.aaxconv.lib.ETranscriptionMarkdown TranscriptionMarkdown {
+            get {
+                return ((global::audiamus.aaxconv.lib.ETranscriptionMarkdown)(this["TranscriptionMarkdown"]));
+            }
+            set {
+                this["TranscriptionMarkdown"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string WhisperDirectory {
+            get {
+                return ((string)(this["WhisperDirectory"]));
+            }
+            set {
+                this["WhisperDirectory"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("10")]
+        public uint TranscriptionSkipIntroSec {
+            get {
+                return ((uint)(this["TranscriptionSkipIntroSec"]));
+            }
+            set {
+                this["TranscriptionSkipIntroSec"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("8")]
+        public uint TranscriptionSkipOutroSec {
+            get {
+                return ((uint)(this["TranscriptionSkipOutroSec"]));
+            }
+            set {
+                this["TranscriptionSkipOutroSec"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool TranscriptionFilterBoilerplate {
+            get {
+                return ((bool)(this["TranscriptionFilterBoilerplate"]));
+            }
+            set {
+                this["TranscriptionFilterBoilerplate"] = value;
+            }
+        }
+
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("True")]

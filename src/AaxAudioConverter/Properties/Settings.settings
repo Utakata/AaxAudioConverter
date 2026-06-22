@@ -95,6 +95,30 @@
     <Setting Name="FlatFolderNaming" Type="audiamus.aaxconv.lib.EFlatFolderNaming" Scope="User">
       <Value Profile="(Default)">author_book</Value>
     </Setting>
+    <Setting Name="BookFolderForChapterSplit" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="Transcription" Type="audiamus.aaxconv.lib.ETranscription" Scope="User">
+      <Value Profile="(Default)">no</Value>
+    </Setting>
+    <Setting Name="TranscriptionLanguage" Type="audiamus.aaxconv.lib.ETranscriptionLanguage" Scope="User">
+      <Value Profile="(Default)">english</Value>
+    </Setting>
+    <Setting Name="TranscriptionMarkdown" Type="audiamus.aaxconv.lib.ETranscriptionMarkdown" Scope="User">
+      <Value Profile="(Default)">perBook</Value>
+    </Setting>
+    <Setting Name="WhisperDirectory" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="TranscriptionSkipIntroSec" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">10</Value>
+    </Setting>
+    <Setting Name="TranscriptionSkipOutroSec" Type="System.UInt32" Scope="User">
+      <Value Profile="(Default)">8</Value>
+    </Setting>
+    <Setting Name="TranscriptionFilterBoilerplate" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="WithSeriesTitle" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">True</Value>
     </Setting>

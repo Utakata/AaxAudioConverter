@@ -26,6 +26,12 @@ Convert Audible aax files to mp3 and m4a/m4b
 - Supports named chapters, for .aax files downloaded with Book Lib Connect.
 - Can adjust inaccurate chapter marks.
 - Allows customization of output naming: files, folders and tags.
+- Optionally keeps all chapter-split tracks of a book together in a single per-book folder (no per-chapter sub-folders).
+- Optional **transcription** (speech-to-text) of the converted audio using a local [whisper.cpp](https://github.com/ggerganov/whisper.cpp) engine:
+  - English or Japanese.
+  - Result written as **Markdown**, either one file per book (ideal for import into tools such as NotebookLM) or one file per chapter.
+  - Skips the Audible brand intro/outro and filters known boilerplate phrases ("This is Audible …").
+  - Requires a local whisper.cpp build (`whisper-cli.exe`) and a `ggml-*.bin` model; the folder is configured on the *Transcription* tab in *Settings*.
 - Special functions:
   - Establish iTunes compatibility for very long books in .m4a/.m4b format.
   - Fix AAC encoding bug in 44.1 kHz .aax files.

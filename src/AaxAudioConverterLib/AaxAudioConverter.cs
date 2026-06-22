@@ -101,6 +101,7 @@ namespace audiamus.aaxconv.lib {
       initTempDirectory ();
 
       FFmpeg.GetFFmpegDir = getFFmpegPath;
+      Whisper.GetWhisperDir = () => Settings.WhisperDirectory;
     }
     #endregion Public Constructors
 
@@ -560,6 +561,8 @@ namespace audiamus.aaxconv.lib {
         }
 
         phases.Add (EProgressPhase.transcoding);
+        if (Settings.Transcription == ETranscription.enabled)
+          phases.Add (EProgressPhase.transcribing);
         if (Settings.AaxCopyMode != EAaxCopyMode.no)
           phases.Add (EProgressPhase.copying);
 
@@ -649,6 +652,7 @@ namespace audiamus.aaxconv.lib {
             else {
               makePlaylist (book);
               extraMetaFiles (book);
+              transcribeBook (book);
               copyAaxFiles (book);
               if (Callbacks?.Cancelled ?? false)
                 deleteOutDirectory (book);
@@ -672,6 +676,25 @@ namespace audiamus.aaxconv.lib {
       if (Settings.ExtraMetaFiles) {
         var emf = new ExtraMetaFiles (book, Settings, Resources);
         emf.WriteFiles (flatDir);
+      }
+    }
+
+    private void transcribeBook (Book book) {
+      if (Settings.Transcription != ETranscription.enabled)
+        return;
+
+      // EProgressPhase.transcribing;
+      EProgressPhase phase = book.Progress.NextPhase ();
+      using (new ResourceGuard (f => Callbacks.Progress (
+        new ProgressMessage {
+          Info = f ?
+            ProgressInfo.ProgressInfoBook (book.TitleTag, phase) :
+            ProgressInfo.ProgressInfoBookCancel (book.TitleTag)
+        }))) {
+        string ffmpegExePath = Path.Combine (getFFmpegPath (), FFmpeg.FFMPEG_EXE);
+        var transcriber = new Transcriber (book, Settings, Resources, () => Callbacks?.Cancelled ?? false);
+        transcriber.Run (ffmpegExePath, flatDir);
+        Callbacks.Progress (new ProgressMessage { IncWeightedPhases = (uint)book.Progress.CurrentPhaseWeightBook });
       }
     }
 

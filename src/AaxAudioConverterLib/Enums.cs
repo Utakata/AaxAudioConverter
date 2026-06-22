@@ -164,4 +164,22 @@ namespace audiamus.aaxconv.lib {
     new_folder,
     skip
   }
+
+  // Speech-to-text transcription of the converted audio
+  public enum ETranscription {
+    no,
+    enabled
+  }
+
+  // Spoken language of the audiobook, passed to the Whisper engine
+  public enum ETranscriptionLanguage {
+    english,
+    japanese
+  }
+
+  // Granularity of the generated Markdown transcript
+  public enum ETranscriptionMarkdown {
+    perChapter,
+    perBook
+  }
 }

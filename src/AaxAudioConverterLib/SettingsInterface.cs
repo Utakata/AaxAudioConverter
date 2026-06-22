@@ -18,6 +18,7 @@ namespace audiamus.aaxconv.lib {
     bool ExtraMetaFiles { get; set; }
     ENamedChapters NamedChapters { get; set; }
     bool M4B { get; set; }
+    bool BookFolderForChapterSplit { get; set; }
   }
 
   public interface IActivationSettings {
@@ -51,6 +52,17 @@ namespace audiamus.aaxconv.lib {
     EConvMode ConvMode { get; set; }
   }
 
+  public interface ITranscriptionSettings {
+    ETranscription Transcription { get; set; }
+    ETranscriptionLanguage TranscriptionLanguage { get; set; }
+    ETranscriptionMarkdown TranscriptionMarkdown { get; set; }
+    [ToString (typeof (ToStringConverterPath))]
+    string WhisperDirectory { get; set; }
+    uint TranscriptionSkipIntroSec { get; set; }
+    uint TranscriptionSkipOutroSec { get; set; }
+    bool TranscriptionFilterBoilerplate { get; set; }
+  }
+
   public interface INamingAndModeSettings : INamingSettingsEx, IModeSettings {
   }
 
@@ -71,7 +83,7 @@ namespace audiamus.aaxconv.lib {
   public interface IConvSettings :
     INamingAndModeSettings, IActivationSettings, ITitleSettingsEx,
     IUpdateSetting, IAaxCopySettings, IBitRateSettings,
-    IRoleTagAssigmentSettings {
+    IRoleTagAssigmentSettings, ITranscriptionSettings {
     bool NonParallel { get; }
     int FFmpeg64bitHours { get; }
     [ToString (typeof (ToStringConverterPath))]
