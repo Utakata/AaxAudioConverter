@@ -177,6 +177,12 @@ namespace audiamus.aaxconv.lib {
     japanese
   }
 
+  // Where the speech-to-text actually runs
+  public enum ETranscriptionEngine {
+    localWhisper,
+    colabExport
+  }
+
   // Granularity of the generated Markdown transcript
   public enum ETranscriptionMarkdown {
     perChapter,

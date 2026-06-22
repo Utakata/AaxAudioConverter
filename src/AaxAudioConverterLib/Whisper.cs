@@ -111,7 +111,7 @@ namespace audiamus.aaxconv.lib {
       string txtFile = outPrefix + ".txt";
 
       try {
-        if (!toWav (ffmpegExePath, audioFile, wavFile, skipStart, keepDuration)) {
+        if (!MakeWav (ffmpegExePath, audioFile, wavFile, skipStart, keepDuration)) {
           _error = true;
           return null;
         }
@@ -148,8 +148,10 @@ namespace audiamus.aaxconv.lib {
     }
     #endregion
 
-    #region private methods
-    private bool toWav (string ffmpegExePath, string audioFile, string wavFile, TimeSpan? skipStart, TimeSpan? keepDuration) {
+    // Down-mix any audio file to the 16 kHz mono PCM wav whisper.cpp/faster-whisper expect.
+    // Also reused by ColabExporter to package audio for remote transcription.
+    #region helpers
+    public bool MakeWav (string ffmpegExePath, string audioFile, string wavFile, TimeSpan? skipStart = null, TimeSpan? keepDuration = null) {
       string param = FFMPEG_TO_WAV;
 
       if (skipStart.HasValue && skipStart.Value > TimeSpan.Zero) {

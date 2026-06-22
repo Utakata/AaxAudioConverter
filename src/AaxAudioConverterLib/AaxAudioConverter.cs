@@ -692,8 +692,14 @@ namespace audiamus.aaxconv.lib {
             ProgressInfo.ProgressInfoBookCancel (book.TitleTag)
         }))) {
         string ffmpegExePath = Path.Combine (getFFmpegPath (), FFmpeg.FFMPEG_EXE);
-        var transcriber = new Transcriber (book, Settings, Resources, () => Callbacks?.Cancelled ?? false);
-        transcriber.Run (ffmpegExePath, flatDir);
+        Func<bool> cancel = () => Callbacks?.Cancelled ?? false;
+        if (Settings.TranscriptionEngine == ETranscriptionEngine.colabExport) {
+          var exporter = new ColabExporter (book, Settings, Resources, cancel);
+          exporter.Export (ffmpegExePath, flatDir);
+        } else {
+          var transcriber = new Transcriber (book, Settings, Resources, cancel);
+          transcriber.Run (ffmpegExePath, flatDir);
+        }
         Callbacks.Progress (new ProgressMessage { IncWeightedPhases = (uint)book.Progress.CurrentPhaseWeightBook });
       }
     }

@@ -412,6 +412,30 @@ namespace audiamus.aaxconv.Properties {
 
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("localWhisper")]
+        public global::audiamus.aaxconv.lib.ETranscriptionEngine TranscriptionEngine {
+            get {
+                return ((global::audiamus.aaxconv.lib.ETranscriptionEngine)(this["TranscriptionEngine"]));
+            }
+            set {
+                this["TranscriptionEngine"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ColabExportDirectory {
+            get {
+                return ((string)(this["ColabExportDirectory"]));
+            }
+            set {
+                this["ColabExportDirectory"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("english")]
         public global::audiamus.aaxconv.lib.ETranscriptionLanguage TranscriptionLanguage {
             get {

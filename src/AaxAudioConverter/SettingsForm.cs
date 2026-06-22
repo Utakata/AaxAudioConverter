@@ -31,6 +31,9 @@ namespace audiamus.aaxconv {
     // Transcription tab (built programmatically, see initTranscriptionTab)
     private CheckBox _ckBoxBookFolderForChapterSplit;
     private CheckBox _ckBoxTranscription;
+    private ComboBox _comBoxTranscrEngine;
+    private Button _btnColabDir;
+    private Label _lblColabDir;
     private ComboBox _comBoxTranscrLanguage;
     private ComboBox _comBoxTranscrMarkdown;
     private NumericUpDown _nudTranscrIntro;
@@ -590,9 +593,27 @@ namespace audiamus.aaxconv {
       _ckBoxTranscription = new CheckBox {
         AutoSize = true,
         Location = new Point (x, y),
-        Text = "Transcribe audio to text (local Whisper)"
+        Text = "Transcribe audio to text"
       };
       _ckBoxTranscription.CheckedChanged += ckBoxTranscription_CheckedChanged;
+      y += 30;
+
+      var lblEngine = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent, y + 3),
+        Text = "Engine"
+      };
+      _comBoxTranscrEngine = new ComboBox {
+        DropDownStyle = ComboBoxStyle.DropDownList,
+        Location = new Point (xIndent + 110, y),
+        Width = 220
+      };
+      // order must match ETranscriptionEngine: localWhisper (0), colabExport (1)
+      _comBoxTranscrEngine.Items.AddRange (new object[] {
+        "Local (whisper.cpp)",
+        "Google Colab export"
+      });
+      _comBoxTranscrEngine.SelectedIndexChanged += comBoxTranscrEngine_SelectedIndexChanged;
       y += 30;
 
       var lblLanguage = new Label {
@@ -669,16 +690,31 @@ namespace audiamus.aaxconv {
         Location = new Point (xIndent + 140, y + 5),
         MaximumSize = new Size (300, 0)
       };
+      y += 34;
+
+      _btnColabDir = new Button {
+        AutoSize = true,
+        Location = new Point (xIndent, y),
+        Text = "Colab export folder …"
+      };
+      _btnColabDir.Click += btnColabDir_Click;
+      _lblColabDir = new Label {
+        AutoSize = true,
+        Location = new Point (xIndent + 140, y + 5),
+        MaximumSize = new Size (300, 0)
+      };
 
       tabPage.Controls.AddRange (new Control[] {
         _ckBoxBookFolderForChapterSplit,
         _ckBoxTranscription,
+        lblEngine, _comBoxTranscrEngine,
         lblLanguage, _comBoxTranscrLanguage,
         lblMarkdown, _comBoxTranscrMarkdown,
         lblIntro, _nudTranscrIntro,
         lblOutro, _nudTranscrOutro,
         _ckBoxTranscrBoilerplate,
-        _btnWhisperLoc, _lblWhisperLoc
+        _btnWhisperLoc, _lblWhisperLoc,
+        _btnColabDir, _lblColabDir
       });
 
       tabControl1.TabPages.Add (tabPage);
@@ -687,12 +723,14 @@ namespace audiamus.aaxconv {
     private void initControlsFromSettingsTranscription () {
       _ckBoxBookFolderForChapterSplit.Checked = Settings.BookFolderForChapterSplit;
       _ckBoxTranscription.Checked = Settings.Transcription == ETranscription.enabled;
+      _comBoxTranscrEngine.SelectedIndex = (int)Settings.TranscriptionEngine;
       _comBoxTranscrLanguage.SelectedIndex = (int)Settings.TranscriptionLanguage;
       _comBoxTranscrMarkdown.SelectedIndex = (int)Settings.TranscriptionMarkdown;
       _nudTranscrIntro.Value = Math.Min (Settings.TranscriptionSkipIntroSec, (uint)_nudTranscrIntro.Maximum);
       _nudTranscrOutro.Value = Math.Min (Settings.TranscriptionSkipOutroSec, (uint)_nudTranscrOutro.Maximum);
       _ckBoxTranscrBoilerplate.Checked = Settings.TranscriptionFilterBoilerplate;
       _lblWhisperLoc.Text = Settings.WhisperDirectory;
+      _lblColabDir.Text = Settings.ColabExportDirectory;
       enableTranscriptionDependencies (_ckBoxTranscription.Checked);
     }
 
@@ -701,6 +739,8 @@ namespace audiamus.aaxconv {
         updateSettings (Settings.BookFolderForChapterSplit, _ckBoxBookFolderForChapterSplit.Checked);
       Settings.Transcription =
         updateSettings (Settings.Transcription, _ckBoxTranscription.Checked ? ETranscription.enabled : ETranscription.no);
+      Settings.TranscriptionEngine =
+        updateSettings (Settings.TranscriptionEngine, (ETranscriptionEngine)Math.Max (0, _comBoxTranscrEngine.SelectedIndex));
       Settings.TranscriptionLanguage =
         updateSettings (Settings.TranscriptionLanguage, (ETranscriptionLanguage)Math.Max (0, _comBoxTranscrLanguage.SelectedIndex));
       Settings.TranscriptionMarkdown =
@@ -717,13 +757,34 @@ namespace audiamus.aaxconv {
       enableTranscriptionDependencies (_ckBoxTranscription.Checked);
     }
 
+    private void comBoxTranscrEngine_SelectedIndexChanged (object sender, EventArgs e) {
+      enableTranscriptionDependencies (_ckBoxTranscription.Checked);
+    }
+
     private void enableTranscriptionDependencies (bool enabled) {
+      bool colab = _comBoxTranscrEngine.SelectedIndex == (int)ETranscriptionEngine.colabExport;
+      _comBoxTranscrEngine.Enabled = enabled;
       _comBoxTranscrLanguage.Enabled = enabled;
       _comBoxTranscrMarkdown.Enabled = enabled;
       _nudTranscrIntro.Enabled = enabled;
       _nudTranscrOutro.Enabled = enabled;
       _ckBoxTranscrBoilerplate.Enabled = enabled;
-      _btnWhisperLoc.Enabled = enabled;
+      // Whisper folder only matters for the local engine, Colab folder only for the export engine
+      _btnWhisperLoc.Enabled = enabled && !colab;
+      _btnColabDir.Enabled = enabled && colab;
+    }
+
+    private void btnColabDir_Click (object sender, EventArgs e) {
+      using (var fbd = new FolderBrowserDialog {
+        Description = "Select the folder synced to Google Drive for Colab transcription",
+        SelectedPath = Settings.ColabExportDirectory ?? string.Empty
+      }) {
+        if (fbd.ShowDialog (this) != DialogResult.OK)
+          return;
+        Settings.ColabExportDirectory = fbd.SelectedPath;
+        _lblColabDir.Text = fbd.SelectedPath;
+        Dirty = true;
+      }
     }
 
     private void btnWhisperLoc_Click (object sender, EventArgs e) {

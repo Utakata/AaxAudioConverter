@@ -54,6 +54,9 @@ namespace audiamus.aaxconv.lib {
 
   public interface ITranscriptionSettings {
     ETranscription Transcription { get; set; }
+    ETranscriptionEngine TranscriptionEngine { get; set; }
+    [ToString (typeof (ToStringConverterPath))]
+    string ColabExportDirectory { get; set; }
     ETranscriptionLanguage TranscriptionLanguage { get; set; }
     ETranscriptionMarkdown TranscriptionMarkdown { get; set; }
     [ToString (typeof (ToStringConverterPath))]
