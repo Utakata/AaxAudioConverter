@@ -134,7 +134,7 @@ namespace audiamus.aaxconv.lib {
           return null;
         }
 
-        string text = File.ReadAllText (txtFile, Encoding.UTF8);
+        string text = File.ReadAllText (txtFile, System.Text.Encoding.UTF8);
         return text;
 
       } catch (Exception exc) {
