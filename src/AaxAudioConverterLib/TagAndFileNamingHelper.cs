@@ -404,16 +404,20 @@ namespace audiamus.aaxconv.lib {
           }
         case EConvMode.splitChapters:
         default:
+          // When BookFolderForChapterSplit is set, keep all split tracks together in the
+          // per-book (or per-part) folder instead of creating a sub-folder per chapter.
+          bool chapterFolders = Settings.ChapterNaming != EGeneralNamingEx._nofolders
+                                && !Settings.BookFolderForChapterSplit;
           switch (_book.PartsType) {
             case Book.EParts.some:
-              if (Settings.ChapterNaming != EGeneralNamingEx._nofolders)
+              if (chapterFolders)
                 return Path.Combine (_book.OutDirectoryLong, Part, Chapter, filename);
               else
                 return Path.Combine (_book.OutDirectoryLong, Part, filename);
             case Book.EParts.none:
             case Book.EParts.all:
             default:
-              if (Settings.ChapterNaming != EGeneralNamingEx._nofolders)
+              if (chapterFolders)
                 return Path.Combine (_book.OutDirectoryLong, Chapter, filename);
               else
                 return Path.Combine (_book.OutDirectoryLong, filename);

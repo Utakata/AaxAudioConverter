@@ -67,7 +67,11 @@
     <Compile Include="AudibleAppSimsBySeries.cs" />
     <Compile Include="Book.Part.cs" />
     <Compile Include="ContentMetadata.json.cs" />
+    <Compile Include="ColabExporter.cs" />
     <Compile Include="ExtraMetaFiles.cs" />
+    <Compile Include="MarkdownWriter.cs" />
+    <Compile Include="Transcriber.cs" />
+    <Compile Include="Whisper.cs" />
     <Compile Include="FFMetaData.cs" />
     <Compile Include="FileEx.cs" />
     <Compile Include="FixAtomESDS.cs" />

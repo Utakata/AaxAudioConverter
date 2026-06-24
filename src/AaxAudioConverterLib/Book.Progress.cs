@@ -11,6 +11,7 @@ namespace audiamus.aaxconv.lib {
           { EProgressPhase.silence, 3 },
           { EProgressPhase.adjust, 2 },
           { EProgressPhase.transcoding, 2 },
+          { EProgressPhase.transcribing, 8 },
           { EProgressPhase.copying, 1 },
         };
 
@@ -19,6 +20,7 @@ namespace audiamus.aaxconv.lib {
           { EProgressPhase.silence, 3 },
           { EProgressPhase.adjust, 2 },
           { EProgressPhase.transcoding, 10 },
+          { EProgressPhase.transcribing, 8 },
           { EProgressPhase.copying, 1 },
         };
 

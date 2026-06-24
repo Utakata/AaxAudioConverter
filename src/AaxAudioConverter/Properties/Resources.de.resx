@@ -292,6 +292,9 @@ auf ursprüngliche Werte zurücksetzen?</value>
   <data name="transcoding" xml:space="preserve">
     <value>Transcodieren</value>
   </data>
+  <data name="transcribing" xml:space="preserve">
+    <value>Transkribieren</value>
+  </data>
   <data name="copying" xml:space="preserve">
     <value>Kopieren</value>
   </data>

@@ -1,0 +1,16 @@
+# Build environment tooling (downloaded by tools/build/setup.ps1)
+tools/build/.tools/
+
+# ffmpeg binaries provisioned into the app project (not redistributed in-repo)
+src/AaxAudioConverter/ffmpeg.exe
+src/AaxAudioConverter/ffmpeg64.exe
+
+# NuGet packages restored locally
+src/packages/
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Inno Setup compiled installer output
+src/InnoSetup/Setup/
