@@ -87,6 +87,51 @@ function Test-Admin {
     [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Test-Winget {
+  $null -ne (Get-Command winget -ErrorAction SilentlyContinue)
+}
+
+# Install a winget package, optionally forwarding raw installer args via --override.
+# winget itself triggers the UAC prompt for the underlying machine installer.
+function Install-WithWinget ([string] $Id, [string] $Override) {
+  $wingetArgs = @(
+    'install', '--id', $Id, '--exact', '--silent',
+    '--accept-package-agreements', '--accept-source-agreements',
+    '--disable-interactivity'
+  )
+  if ($Override) { $wingetArgs += @('--override', $Override) }
+  Write-Info "winget $($wingetArgs -join ' ')"
+  & winget @wingetArgs
+  # winget surfaces a variety of codes (and may remap the underlying installer's reboot code).
+  # Don't treat a non-zero code as fatal here; the caller verifies the result (Find-MSBuild /
+  # Find-Iscc) and throws if the tool is genuinely missing. Just warn so the log is honest.
+  if ($LASTEXITCODE -ne 0) {
+    Write-Info "winget returned exit code $LASTEXITCODE for $Id (continuing; will verify result)."
+  }
+}
+
+# Locate ISCC.exe (Inno Setup compiler) from a portable dir, App Paths, or default install.
+function Find-Iscc ([string] $PortableDir) {
+  $candidates = @()
+  if ($PortableDir) { $candidates += Join-Path $PortableDir 'ISCC.exe' }
+  foreach ($key in @(
+      'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Compil32.exe',
+      'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\App Paths\Compil32.exe')) {
+    try {
+      $dir = (Get-ItemProperty -Path $key -ErrorAction Stop).Path
+      if ($dir) { $candidates += Join-Path $dir 'ISCC.exe' }
+    } catch { }
+  }
+  $candidates += @(
+    (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+    (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')
+  )
+  foreach ($c in $candidates) {
+    if ($c -and (Test-Path -LiteralPath $c)) { return $c }
+  }
+  return $null
+}
+
 # --- pre-flight --------------------------------------------------------------
 if ($PSVersionTable.PSVersion.Major -lt 5) { throw 'PowerShell 5.0 or newer is required.' }
 if (-not ($IsWindowsPlatform = ($env:OS -eq 'Windows_NT'))) {
@@ -128,27 +173,36 @@ if ($msbuild) {
 } elseif ($SkipVsBuildTools) {
   throw 'MSBuild not found and -SkipVsBuildTools was specified. Install Visual Studio / Build Tools 2022 with the .NET desktop build tools and the .NET Framework 4.8 targeting pack, then re-run.'
 } else {
-  Write-Step 'Installing Visual Studio Build Tools 2022 (this requires administrator rights)'
-  $bootstrapper = Join-Path $ToolsRoot 'vs_BuildTools.exe'
-  Get-File 'https://aka.ms/vs/17/release/vs_BuildTools.exe' $bootstrapper
+  Write-Step 'Installing Visual Studio Build Tools 2022 (requires administrator rights)'
 
+  # Raw VS installer args, shared by the winget --override path and the bootstrapper fallback.
+  # --installPath is what lets the heavy toolchain land on the chosen drive (e.g. D:).
   $vsArgLine = "--installPath `"$VsInstallPath`"" +
     ' --add Microsoft.VisualStudio.Workload.ManagedDesktopBuildTools' +
     ' --add Microsoft.Net.Component.4.8.SDK' +
     ' --add Microsoft.Net.Component.4.8.TargetingPack' +
     ' --includeRecommended --quiet --norestart --wait --nocache'
 
-  if (Test-Admin) {
-    Write-Info "$bootstrapper $vsArgLine"
-    $p = Start-Process -FilePath $bootstrapper -ArgumentList $vsArgLine -Wait -PassThru
+  if (Test-Winget) {
+    Write-Info 'Using winget (Microsoft.VisualStudio.2022.BuildTools)'
+    Install-WithWinget 'Microsoft.VisualStudio.2022.BuildTools' $vsArgLine
   } else {
-    Write-Info 'Re-launching the VS Build Tools installer elevated (UAC prompt)...'
-    $p = Start-Process -FilePath $bootstrapper -ArgumentList $vsArgLine -Verb RunAs -Wait -PassThru
+    Write-Info 'winget not found; falling back to the vs_BuildTools.exe bootstrapper'
+    $bootstrapper = Join-Path $ToolsRoot 'vs_BuildTools.exe'
+    Get-File 'https://aka.ms/vs/17/release/vs_BuildTools.exe' $bootstrapper
+    if (Test-Admin) {
+      Write-Info "$bootstrapper $vsArgLine"
+      $p = Start-Process -FilePath $bootstrapper -ArgumentList $vsArgLine -Wait -PassThru
+    } else {
+      Write-Info 'Re-launching the VS Build Tools installer elevated (UAC prompt)...'
+      $p = Start-Process -FilePath $bootstrapper -ArgumentList $vsArgLine -Verb RunAs -Wait -PassThru
+    }
+    # 0 = ok, 3010 = ok but reboot recommended
+    if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
+      throw "VS Build Tools installer exited with code $($p.ExitCode)."
+    }
   }
-  # 0 = ok, 3010 = ok but reboot recommended
-  if ($p.ExitCode -ne 0 -and $p.ExitCode -ne 3010) {
-    throw "VS Build Tools installer exited with code $($p.ExitCode)."
-  }
+
   $msbuild = Find-MSBuild
   if (-not $msbuild) { throw "MSBuild still not found after installing VS Build Tools to $VsInstallPath." }
   Write-Info "found: $msbuild"
@@ -184,21 +238,28 @@ $iscc = $null
 if (-not $SkipInstaller) {
   Write-Step 'Provisioning Inno Setup 6'
   $innoDir = Join-Path $ToolsRoot 'InnoSetup'
-  $iscc = Join-Path $innoDir 'ISCC.exe'
-  if ((Test-Path -LiteralPath $iscc) -and -not $Force) {
-    Write-Info "exists, skip: $iscc"
+  $iscc = Find-Iscc $innoDir
+  if ($iscc -and -not $Force) {
+    Write-Info "found, skip install: $iscc"
   } else {
-    $innoSetupExe = Join-Path $ToolsRoot 'innosetup.exe'
-    Get-File 'https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe' $innoSetupExe
-    $innoArgLine = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$innoDir`""
-    Write-Info 'Installing Inno Setup (UAC prompt if not elevated)...'
-    if (Test-Admin) {
-      $p = Start-Process -FilePath $innoSetupExe -ArgumentList $innoArgLine -Wait -PassThru
+    if (Test-Winget) {
+      Write-Info 'Using winget (JRSoftware.InnoSetup)'
+      Install-WithWinget 'JRSoftware.InnoSetup' ''
     } else {
-      $p = Start-Process -FilePath $innoSetupExe -ArgumentList $innoArgLine -Verb RunAs -Wait -PassThru
+      Write-Info 'winget not found; falling back to the Inno Setup installer'
+      $innoSetupExe = Join-Path $ToolsRoot 'innosetup.exe'
+      Get-File 'https://files.jrsoftware.org/is/6/innosetup-6.3.3.exe' $innoSetupExe
+      $innoArgLine = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /DIR=`"$innoDir`""
+      Write-Info 'Installing Inno Setup (UAC prompt if not elevated)...'
+      if (Test-Admin) {
+        $p = Start-Process -FilePath $innoSetupExe -ArgumentList $innoArgLine -Wait -PassThru
+      } else {
+        $p = Start-Process -FilePath $innoSetupExe -ArgumentList $innoArgLine -Verb RunAs -Wait -PassThru
+      }
+      if ($p.ExitCode -ne 0) { throw "Inno Setup installer exited with code $($p.ExitCode)." }
     }
-    if ($p.ExitCode -ne 0) { throw "Inno Setup installer exited with code $($p.ExitCode)." }
-    if (-not (Test-Path -LiteralPath $iscc)) { throw "ISCC.exe not found in $innoDir after install." }
+    $iscc = Find-Iscc $innoDir
+    if (-not $iscc) { throw 'ISCC.exe not found after installing Inno Setup.' }
   }
   Write-Info "ISCC: $iscc"
 }

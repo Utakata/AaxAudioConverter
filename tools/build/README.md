@@ -77,7 +77,14 @@ and builds.
   downloaded 64-bit static build under **both** names (fine for an x64 build/run). To use your
   own builds, drop your `ffmpeg.exe` / `ffmpeg64.exe` into `src\AaxAudioConverter\` before running,
   or pass `-FfmpegUrl`.
-- **Admin / UAC**: installing VS Build Tools and Inno Setup needs elevation. If you start the
-  script non-elevated, it launches those two installers via UAC prompts; the rest runs unelevated.
+- **winget-first**: VS Build Tools 2022 and Inno Setup 6 are installed via **winget** when it is
+  available (Windows 10 2004+/11). The VS Build Tools install location is forwarded to the VS
+  installer through `winget --override "... --installPath <VsInstallPath> ..."`, so `-VsInstallPath`
+  still controls the drive (winget's own `--location` is ignored by the VS installer). On machines
+  without winget, the script automatically falls back to the raw `vs_BuildTools.exe` /
+  `innosetup-6.x.exe` installers.
+- **Admin / UAC**: installing VS Build Tools and Inno Setup needs elevation. winget (or the raw
+  installer fallback) raises the UAC prompt for those two steps; the rest (nuget, ffmpeg, restore,
+  build) runs unelevated.
 - Downloaded tools and the placed ffmpeg binaries are git-ignored (see the repo `.gitignore`),
   so nothing large is committed.
