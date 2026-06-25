@@ -71,6 +71,7 @@
     <Compile Include="ExtraMetaFiles.cs" />
     <Compile Include="MarkdownWriter.cs" />
     <Compile Include="Transcriber.cs" />
+    <Compile Include="Voucher.cs" />
     <Compile Include="Whisper.cs" />
     <Compile Include="FFMetaData.cs" />
     <Compile Include="FileEx.cs" />

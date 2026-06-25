@@ -13,7 +13,7 @@ namespace audiamus.aaxconv {
 
   class FileAssoc {
     readonly IAppSettings _settings;
-    readonly IEnumerable<string> _extensions = new[] { ".aax", ".aa" };
+    readonly IEnumerable<string> _extensions = new[] { ".aax", ".aaxc", ".aa" };
     readonly string _fileDesc;
     readonly Assembly _assembly;
     readonly Control _owner;
