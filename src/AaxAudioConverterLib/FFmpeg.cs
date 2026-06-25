@@ -58,6 +58,12 @@ namespace audiamus.aaxconv.lib {
     
     public const string ACTIVATION_BYTES = @"-activation_bytes";
     const string ACTIVATION_PARAM = ACTIVATION_BYTES + @" <ACT_BYTES>";
+
+    // AAXC (new Audible format): per-file 16-byte key + iv from the companion voucher,
+    // used instead of the legacy 4-byte -activation_bytes.
+    public const string EXT_AAXC = ".aaxc";
+    public const string AUDIBLE_KEY = @"-audible_key";
+    public const string AUDIBLE_IV = @"-audible_iv";
     const string BEGIN_PARAM = @"-ss <TS_FROM>";
     const string END_PARAM = @"-to <TS_TO>";
     //const string COPY_PARAM = @"-vn -c:a copy";
@@ -219,7 +225,7 @@ namespace audiamus.aaxconv.lib {
       _aborted = false;
 
       string param = FFMPEG_PROBE;
-      param = param.Replace (ACTIVATION, string.Empty);
+      param = applyActivation (param, null);
       param = param.Replace (INPUT, _filenameIn);
 
       Log (4, this, () => ID + param.SubstitUser ());
@@ -229,18 +235,38 @@ namespace audiamus.aaxconv.lib {
 
     }
 
+    // Resolves the AAXC key/iv from the input file's companion voucher, if any.
+    // Detection is voucher-driven, not extension-only: some downloaders deliver
+    // AAXC content in a file named ".aax" (major_brand "aaxc"). As long as a
+    // sibling ".voucher"/".json" with the key/iv exists, treat it as AAXC.
+    private bool tryGetAudibleKeyIv (out string key, out string iv) {
+      key = null;
+      iv = null;
+      if (_filenameIn is null)
+        return false;
+      return Voucher.TryGet (_filenameIn, out key, out iv);
+    }
+
+    // Replaces the <ACTIVATION> placeholder: AAXC files use -audible_key/-audible_iv
+    // from their voucher; legacy AAX files use -activation_bytes; otherwise nothing.
+    private string applyActivation (string param, string actBytes) {
+      if (tryGetAudibleKeyIv (out string key, out string iv)) {
+        string p = $"{AUDIBLE_KEY} {key} {AUDIBLE_IV} {iv}";
+        return param.Replace (ACTIVATION, p);
+      }
+      if (actBytes is null)
+        return param.Replace (ACTIVATION, string.Empty);
+      param = param.Replace (ACTIVATION, ACTIVATION_PARAM);
+      return param.Replace (ACT_BYTES, actBytes);
+    }
+
     public bool VerifyActivation (string actBytes, bool withChapters = false) {
       _success = true;
       _aborted = false;
       HasNoActivation = false;
 
       string param = FFMPEG_PROBE;
-      if (actBytes is null)
-        param = param.Replace (ACTIVATION, string.Empty);
-      else {
-        param = param.Replace (ACTIVATION, ACTIVATION_PARAM);
-        param = param.Replace (ACT_BYTES, actBytes);
-      }
+      param = applyActivation (param, actBytes);
 
       param = param.Replace (INPUT, _filenameIn);
 
@@ -263,12 +289,7 @@ namespace audiamus.aaxconv.lib {
       string param = FFMPEG_TRANSCODE;
       if (!(_filenameMeta is null))
         param = FFMPEG_TRANSCODE2;
-      if (actBytes is null)
-        param = param.Replace (ACTIVATION, string.Empty);
-      else {
-        param = param.Replace (ACTIVATION, ACTIVATION_PARAM);
-        param = param.Replace (ACT_BYTES, actBytes);
-      }
+      param = applyActivation (param, actBytes);
 
       if (from.HasValue) {
         param = param.Replace (BEGIN, BEGIN_PARAM);
@@ -331,12 +352,7 @@ namespace audiamus.aaxconv.lib {
       Silences = new List<TimeInterval> ();
 
       string param = FFMPEG_SILENCE;
-      if (actBytes is null)
-        param = param.Replace (ACTIVATION, string.Empty);
-      else {
-        param = param.Replace (ACTIVATION, ACTIVATION_PARAM);
-        param = param.Replace (ACT_BYTES, actBytes);
-      }
+      param = applyActivation (param, actBytes);
       param = param.Replace (INPUT, _filenameIn);
 
       Log (4, this, () => ID + param.SubstitUser ().SubstitActiv ());
@@ -759,14 +775,22 @@ namespace audiamus.aaxconv.lib {
     public static string SubstitActiv (this string s) {
       if (s is null)
         return null;
-      int pos0 = s.IndexOf (FFmpeg.ACTIVATION_BYTES);
+      s = redactAfter (s, FFmpeg.ACTIVATION_BYTES);
+      // AAXC voucher secrets must not leak into the log either.
+      s = redactAfter (s, FFmpeg.AUDIBLE_KEY);
+      s = redactAfter (s, FFmpeg.AUDIBLE_IV);
+      return s;
+    }
+
+    private static string redactAfter (string s, string token) {
+      int pos0 = s.IndexOf (token);
       if (pos0 >= 0) {
         int pos1 = s.IndexOf (' ', pos0 + 1);
         int pos2 = s.IndexOf (' ', pos1 + 1);
         if (pos1 > 0 && pos2 > 0) {
           s = s.Remove (pos1 + 1, pos2 - pos1 - 1);
           s = s.Insert (pos1 + 1, "XXXXXXXX");
-        }  
+        }
       }
       return s;
     }

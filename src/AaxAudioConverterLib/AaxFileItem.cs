@@ -10,6 +10,7 @@ namespace audiamus.aaxconv.lib {
     public const string EXT_JPG = ".jpg";
     public const string EXT_PNG = ".png";
     public const string EXT_AAX = ".aax";
+    public const string EXT_AAXC = ".aaxc";
     public const string EXT_AA = ".aa";
 
     public string FileName { get; private set; }

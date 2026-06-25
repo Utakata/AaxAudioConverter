@@ -25,6 +25,7 @@ namespace audiamus.aaxconv.lib {
 
     #region Private Fields
     const string AAX = AaxFileItem.EXT_AAX;
+    const string AAXC = AaxFileItem.EXT_AAXC;
     const string AA = AaxFileItem.EXT_AA;
     const string AAC = ".aac";
     const string M4A = TagAndFileNamingHelper.EXT_M4A;
@@ -278,7 +279,7 @@ namespace audiamus.aaxconv.lib {
           }
 
           string ext = Path.GetExtension (path).ToLowerInvariant ();
-          succ = ext == AAX || ext == AA;
+          succ = ext == AAX || ext == AAXC || ext == AA;
           if (!succ)
             return;
 
@@ -306,8 +307,26 @@ namespace audiamus.aaxconv.lib {
       return true;
     }
 
+    // AAXC is detected by the presence of a companion voucher (key/iv), not just the
+    // ".aaxc" extension: some downloads carry AAXC content in a ".aax"-named file.
+    private static bool isAaxc (Book.Part part) {
+      string fn = part.AaxFileItem.FileName;
+      if (fn is null)
+        return false;
+      if (fn.EndsWith (AAXC, StringComparison.OrdinalIgnoreCase))
+        return true;
+      return Voucher.TryGet (fn, out _, out _);
+    }
+
     private bool checkActivationAndGetChapters (Book.Part part) {
       lock (_lockable) {
+        // AAXC files carry their own per-file key/iv (companion voucher); the legacy
+        // 4-byte activation code does not apply, so verify directly via the voucher.
+        if (isAaxc (part)) {
+          bool? aaxc = verifyActivationAndGetChapters (part, null);
+          if (aaxc.HasValue && aaxc.Value)
+            return true;
+        }
         while (true) {
           bool? succ = null;
           foreach (string code in _activationCode.ActivationCodes) {
